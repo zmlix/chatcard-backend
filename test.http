@@ -1,0 +1,31 @@
+POST http://localhost:5200/v1/chat/completions HTTP/1.1
+content-type: application/json
+Authorization: Bearer lzm
+
+{
+    "model":"gpt-3.5-turbo",
+    "messages":[
+        {
+            "role":"user",
+            "content":"你好"
+            }
+    ],
+    "stream":true,
+    "top_p":1,
+    "temperature":1,
+    "presence_penalty":0,
+    "frequency_penalty":0
+}
+
+###
+
+GET http://localhost:5200/v1/chat/completions HTTP/1.1
+
+###
+
+OPTIONS http://localhost:5200/v1/chat/completions HTTP/1.1
+
+###
+
+GET http://localhost:5200/v1/models HTTP/1.1
+Authorization: Bearer lzm
