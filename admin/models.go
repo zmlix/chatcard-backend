@@ -7,20 +7,24 @@ type Uid string
 type Token string
 
 type UserModel struct {
-	Id     Uid
-	Name   string
-	Phone  string
-	Tokens []Token
-	Other  map[string]any
+	Id     Uid	`bson:"id" json:"id" form:"id"`
+	Name   string `json:"name" form:"name" valid:"required,type(string)" bson:"name"`
+	Phone  string `json:"phone" form:"phone" valid:"matches(^1[3-9]{1}\\d{9}$)" bson:"phone"`
+	Tokens []Token `bson:"tokens"`
+	Other  map[string]any `bson:"others"`
+	DeleteTime time.Duration `bson:"delete_time"`
+	//bson:"user"
 }
 
 type TokenModel struct {
-	Key        Token
-	Number     Quota
-	User       Uid
-	CreateTime time.Duration
-	UpdateTime time.Duration
-	Models     []string
-	Plugins    []string
-	Disabled   bool
+	Key        Token `bson:"key"`
+	Number     Quota `bson:"number" valid:"required"`
+	UserId       Uid `bson:"user_id" valid:"required"`
+	CreateTime time.Duration `bson:"create_time"`
+	UpdateTime time.Duration `bson:"update_time"`
+	DeleteTime time.Duration `bson:"delete_time"`
+	Models     []string `bson:"models"`
+	Plugins    []string `bson:"plugins"`
+	Disabled   bool `bson:"disabled"`
+	Other  map[string]any `bson:"others"`
 }
