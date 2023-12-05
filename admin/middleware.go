@@ -32,7 +32,7 @@ func (m *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		log.Fatalf("请设置环境变量ADMIN_SECRETKEY")
 	}
-	jwt_token := r.Header.Get("Token")
+	jwt_token := r.Header.Get("Authorization")
 	// fmt.Println(jwt_token)
 	if jwt_token == "" {
 		w.WriteHeader(http.StatusUnauthorized)
