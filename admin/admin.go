@@ -12,11 +12,13 @@ import (
 )
 
 type Admin struct {
-	Client *mongo.Client
+	DBClient *mongo.Client
 }
 
 func New() *Admin {
 	uri, ok := os.LookupEnv("MONGODB_URI")
+	dbname, _ := os.LookupEnv("DBNAME")
+	DBname = dbname
 	if !ok {
 		log.Fatalf("请设置环境变量MONGODB_URI")
 	}
@@ -26,7 +28,7 @@ func New() *Admin {
 		panic(err)
 	}
 	return &Admin{
-		Client: client,
+		DBClient: client,
 	}
 }
 
@@ -47,7 +49,7 @@ func Run(addr string, admin *Admin) {
 		Addr:    addr,
 		Handler: handler,
 	}
-
+	Info( "Admin running in %s ..." , addr)
 	server.ListenAndServe()
 }
 
@@ -56,8 +58,10 @@ func (a *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/v1/login":
 		a.Login(w, r)
-	case "/v1/create/user":
+	case "/v1/user/create":
 		a.CreateUser(w, r)
+	case "/v1/user/getuserlist":
+		a.GetUserList(w, r)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 	}

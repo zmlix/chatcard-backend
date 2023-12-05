@@ -13,11 +13,25 @@ GET http://localhost:5201/v1/login HTTP/1.1
 
 ###
 
-POST http://localhost:5201/v1/create/user HTTP/1.1
+POST http://localhost:5201/v1/user/create HTTP/1.1
 content-type: application/json
-Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTg0NDExNH0.IV92U2qXR96ftXpe5VfzhQPNUXxFKnSM8aG2fmtGtUs
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTg1MDcyOX0.SYhRvfCZZnMweB68vrfATADtNKFWqoea1YQMsuVl8zg
 
 {
-    "username": "admin",
-    "password": "123456"
+    "name": "hl",
+    "phone": ""
+}
+
+### 
+GET http://localhost:5201/v1/user/getuserlist HTTP/1.1
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTg1MDcyOX0.SYhRvfCZZnMweB68vrfATADtNKFWqoea1YQMsuVl8zg
+
+
+### 
+POST http://localhost:5201/v1/user/create HTTP/1.1
+content-type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTg2MDExOH0.FtX4y01V8eraTZqy3pJOGhTH4pzvgZN1yMitwL37kBM
+
+{
+    "name":"hl"
 }
