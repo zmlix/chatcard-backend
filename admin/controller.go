@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -51,5 +52,36 @@ func (a *Admin) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Admin) CreateUser(w http.ResponseWriter, r *http.Request) {
-
+	if err := CheckRequestMethod(w, r, "POST"); err != nil {
+		return
+	}
+	user := UserModel{}
+	json.NewDecoder(r.Body).Decode(&user)
+	_, err := govalidator.ValidateStruct(user)
+	if err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("检验不通过：" + err.Error())))
+		return
+	}
+	userfound, _ := a.DBFindUserByName(user.Name)
+	if  userfound.Id != "" {
+		w.Write(NewResponse(ERROR, Result{}.Message("用户名已存在")))
+		return
+	}
+	if err := a.DBCreateUserAndToken(user); err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("创建失败：" + err.Error())))
+		return
+	}
+	w.Write(NewResponse(OK, Result{}.Message("创建成功!")))
 }
+
+func (a *Admin) GetUserList(w http.ResponseWriter, r *http.Request){
+	if err := CheckRequestMethod(w, r, "GET"); err != nil {
+		return
+	}
+	userlist, err := a.DBFindALL(UserModel{})
+	if err != nil{
+		w.Write(NewResponse(ERROR, Result{}.Message("查询失败：" + err.Error())))
+	}
+	w.Write(NewResponse(OK, Result{}.Data(userlist)))
+}
+
