@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -15,7 +16,11 @@ type Proxy struct {
 	Client *openai.Client
 }
 
-func New(key string) *Proxy {
+func New() *Proxy {
+	key, ok := os.LookupEnv("OPENAI_KEY")
+	if !ok {
+		log.Fatalf("请设置环境变量OPENAI_KEY")
+	}
 
 	conf := openai.DefaultConfig(key)
 	client := openai.NewClientWithConfig(conf)
@@ -27,7 +32,11 @@ func New(key string) *Proxy {
 	}
 }
 
-func NewWithUrl(key string, url string) *Proxy {
+func NewWithUrl(url string) *Proxy {
+	key, ok := os.LookupEnv("OPENAI_KEY")
+	if !ok {
+		log.Fatalf("请设置环境变量OPENAI_KEY")
+	}
 
 	conf := openai.DefaultConfig(key)
 	if url != "" {
@@ -43,14 +52,10 @@ func NewWithUrl(key string, url string) *Proxy {
 }
 
 func Run(addr string, proxy *Proxy) {
-
-	key, ok := os.LookupEnv("OPENAI_KEY")
-	if !ok {
-		log.Fatalf("请设置环境变量OPENAI_KEY")
-	}
+	fmt.Printf("Proxy running in %s ...\n", addr)
 
 	if proxy == nil {
-		proxy = New(key)
+		proxy = New()
 	}
 
 	handler := &CorsMiddleware{

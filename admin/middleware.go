@@ -1,10 +1,12 @@
-package proxy
+package admin
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
-	"regexp"
+	"os"
+
+	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 type AuthMiddleware struct {
@@ -17,44 +19,43 @@ func (m *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("auth...", r.URL.Path)
 
-	Authorization := r.Header.Get("Authorization")
-	fmt.Println(Authorization)
-	if Authorization == "" {
+	if r.URL.Path == "/v1/login" {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		m.Next.ServeHTTP(w, r)
+		return
+	}
+
+	secretkey, ok := os.LookupEnv("ADMIN_SECRETKEY")
+	if !ok {
+		log.Fatalf("请设置环境变量ADMIN_SECRETKEY")
+	}
+	jwt_token := r.Header.Get("Token")
+	// fmt.Println(jwt_token)
+	if jwt_token == "" {
 		w.WriteHeader(http.StatusUnauthorized)
-		errMsg, _ := json.Marshal(RequestError{
-			Message: "未提供Key",
-			Type:    NoKey,
-		})
-		fmt.Fprintf(w, "data: %s\n\n", errMsg)
+		w.Write(NewResponse(ERROR, Result{}.Message("缺少Token")))
 		return
 	}
 
-	pattern, _ := regexp.Compile(`Bearer (.+)`)
-	matches := pattern.FindStringSubmatch(Authorization)
+	token, err := jwt.ParseWithClaims(jwt_token, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretkey), nil
+	}, jwt.WithValidMethods([]string{"HS256"}))
 
-	if len(matches) != 2 {
-		errMsg, _ := json.Marshal(RequestError{
-			Message: "未提供Key",
-			Type:    NoKey,
-		})
-		fmt.Fprintf(w, "data: %s\n\n", errMsg)
-		return
-	}
-
-	key := matches[1]
-	fmt.Println("key", key)
-
-	if key != "lzm" {
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		errMsg, _ := json.Marshal(RequestError{
-			Message: "无效的Key",
-			Type:    InvalidKey,
-		})
-		fmt.Fprintf(w, "data: %s\n\n", errMsg)
+		w.Write(NewResponse(ERROR, Result{}.Message(err)))
 		return
 	}
 
-	m.Next.ServeHTTP(w, r)
+	if _, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
+		m.Next.ServeHTTP(w, r)
+	} else {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(NewResponse(ERROR, Result{}.Message("权限验证失败")))
+	}
 }
 
 type CorsMiddleware struct {

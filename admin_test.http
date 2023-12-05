@@ -1,0 +1,23 @@
+POST http://localhost:5201/v1/login HTTP/1.1
+content-type: application/json
+Authorization: Bearer lzm
+
+{
+    "username": "admin",
+    "password": "123456"
+}
+
+###
+
+GET http://localhost:5201/v1/login HTTP/1.1
+
+###
+
+POST http://localhost:5201/v1/create/user HTTP/1.1
+content-type: application/json
+Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTg0NDExNH0.IV92U2qXR96ftXpe5VfzhQPNUXxFKnSM8aG2fmtGtUs
+
+{
+    "username": "admin",
+    "password": "123456"
+}
