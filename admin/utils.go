@@ -109,7 +109,6 @@ func (a *Admin) DBCreateUserAndToken(user UserModel) error {
 		Fatal(err)
 		return err
 	}
-
 	//commit
 	err = session.CommitTransaction(ctx)
 	if err != nil {
@@ -154,49 +153,42 @@ func (a *Admin) DBFindUserByName(name string) (UserModel, error) {
 	return user, err
 }
 
-func (a *Admin) DBFindALL(data interface{}) ([]interface{}, error) {
-	var result []interface{}
-	switch data.(type) {
-	case UserModel:
+func (a *Admin) DBFindAll(data interface{}) error {
+	switch data := data.(type) {
+	case *[]UserModel:
 		collection := a.DBClient.Database(DBname).Collection("user")
 		cursor, err := collection.Find(context.TODO(), bson.M{})
 		if err != nil {
-			fmt.Println("sad")
-			return nil, err
+			return err
 		}
 		defer cursor.Close(context.TODO())
 		for cursor.Next(context.TODO()) {
 			var userModel UserModel
-			err := cursor.Decode(&userModel)
-			if err != nil {
-				return nil, err
+			if err := cursor.Decode(&userModel); err != nil {
+				return err
 			}
-			result = append(result, userModel)
-		}
-		if err := cursor.All(context.TODO(), &result); err != nil {
-			return nil, err
+			*data = append(*data, userModel)
 		}
 
-	case TokenModel:
+	case *[]TokenModel:
 		collection := a.DBClient.Database(DBname).Collection("token")
 		cursor, err := collection.Find(context.TODO(), bson.M{})
 		if err != nil {
-			return nil, err
+			return err
 		}
 		defer cursor.Close(context.TODO())
 		for cursor.Next(context.TODO()) {
 			var tokenModel TokenModel
-			err := cursor.Decode(&tokenModel)
-			if err != nil {
-				return nil, err
+			if err := cursor.Decode(&tokenModel); err != nil {
+				return err
 			}
-			result = append(result, tokenModel)
+			*data = append(*data, tokenModel)
 		}
 
 	default:
-		return nil, fmt.Errorf("unsupported data type: %T", data)
+		return fmt.Errorf("不支持的数据类型: %T", data)
 	}
-	return result, nil
+	return nil
 }
 
 

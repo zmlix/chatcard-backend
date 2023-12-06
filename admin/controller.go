@@ -78,10 +78,11 @@ func (a *Admin) GetUserList(w http.ResponseWriter, r *http.Request){
 	if err := CheckRequestMethod(w, r, "GET"); err != nil {
 		return
 	}
-	userlist, err := a.DBFindALL(UserModel{})
+	userList := []UserModel{}
+	err := a.DBFindAll(&userList)
 	if err != nil{
 		w.Write(NewResponse(ERROR, Result{}.Message("查询失败：" + err.Error())))
 	}
-	w.Write(NewResponse(OK, Result{}.Data(userlist)))
+	w.Write(NewResponse(OK, Result{}.Data(userList)))
 }
 
