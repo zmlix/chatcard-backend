@@ -86,7 +86,6 @@ func (a *Admin) GetUserList(w http.ResponseWriter, r *http.Request){
 	}else{
 		page, _ = strconv.Atoi(p)
 	}
-
 	userList := []UserModel{}
 	// err := a.DBFindAll(&userList)
 	totalPages, err := a.DBFindPage(&userList, page)
@@ -96,3 +95,19 @@ func (a *Admin) GetUserList(w http.ResponseWriter, r *http.Request){
 	w.Write(NewResponse(OK, Result{}.DataAndTotalPages(userList, totalPages)))
 }
 
+func (a *Admin) UpdateUser(w http.ResponseWriter, r *http.Request){
+	if err := CheckRequestMethod(w, r, "POST"); err != nil {
+		return
+	}
+	user := UserModel{}
+	json.NewDecoder(r.Body).Decode(&user)
+	if user.Id == "" {
+		w.Write(NewResponse(ERROR, Result{}.Message("用户ID不能为空")))
+		return
+	}
+	if err := a.DBUpdate(user); err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("更新失败：" + err.Error())))
+		return
+	}
+	w.Write(NewResponse(OK, Result{}.Message("更新成功")))
+}

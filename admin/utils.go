@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	mango "go.mongodb.org/mongo-driver/mongo"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -159,6 +160,22 @@ func (a *Admin) DBFindUserByName(name string) (UserModel, error) {
 	return user, err
 }
 
+func (a *Admin) DBFindUserByID(id Uid) (UserModel, error) {
+	user := UserModel{}
+	collection := a.DBClient.Database(DBname).Collection("user")
+	filter := bson.M{"id": id}
+	err := collection.FindOne(context.TODO(), filter).Decode(&user)
+	return user, err
+}
+
+func (a *Admin) DBFindTokenByKey(key Token) (TokenModel, error) {
+	token := TokenModel{}
+	collection := a.DBClient.Database(DBname).Collection("user")
+	filter := bson.M{"key": key}
+	err := collection.FindOne(context.TODO(), filter).Decode(&token)
+	return token, err
+}
+
 func (a *Admin) DBFindAll(data interface{}) error {
 	switch data := data.(type) {
 	case *[]UserModel:
@@ -268,6 +285,86 @@ func (a *Admin) DBFindPage(data interface{}, page int) (int, error) {
 	default:
 		return 0, fmt.Errorf("不支持的数据类型: %T", data)
 	}
+}
+
+func (a *Admin) DBUpdate(data interface{}) error {
+	switch v := data.(type){
+	case UserModel:
+		return a.DBUpdateUser(v)
+	case TokenModel:
+		return a.DBUpdateToken(v)
+	default:
+		return fmt.Errorf("不支持的数据类型: %T", data)
+	}
+}
+
+func (a *Admin) DBUpdateUser(user UserModel) error {
+	userfound, err := a.DBFindUserByID(user.Id);
+	if  err != nil {
+		return err
+	}
+	collection := a.DBClient.Database(DBname).Collection("user")
+	filter := bson.M{"id": user.Id}
+	update := bson.D{}
+	if user.Name != "" {
+		if _, err := a.DBFindUserByName(user.Name); err == mango.ErrNoDocuments || userfound.Name == user.Name {
+			update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "name", Value: user.Name}}})
+		}else{
+			return fmt.Errorf("用户名已存在")
+		}
+	}
+	if user.Phone != "" {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "phone", Value: user.Phone}}})
+	}
+	if len(user.Tokens) > 0 {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "tokens", Value: user.Tokens}}})
+	}
+	if len(user.Other) > 0 {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "others", Value: user.Other}}})
+	}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *Admin) DBUpdateToken(token TokenModel) error {
+	if _, err := a.DBFindTokenByKey(token.Key); err != nil {
+		return nil
+	}
+	collection := a.DBClient.Database(DBname).Collection("token")
+	filter := bson.M{"key": token.Key}
+	update := bson.D{}
+	if token.Number != 0 {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "number", Value: token.Number}}})
+	}
+	if token.UserId != "" {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "user_id", Value: token.UserId}}})
+	}
+	if token.CreateTime != 0 {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "create_time", Value: token.CreateTime}}})
+	}
+	if token.UpdateTime != 0 {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "update_time", Value: token.UpdateTime}}})
+	}
+	if len(token.Models) > 0 {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "models", Value: token.Models}}})
+	}
+	if len(token.Plugins) > 0 {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "plugins", Value: token.Plugins}}})
+	}
+	if token.Disabled {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "disabled", Value: token.Disabled}}})
+	}
+	if len(token.Other) > 0 {
+		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "others", Value: token.Other}}})
+	}
+	_, err := collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //生成用户key

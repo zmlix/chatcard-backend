@@ -12,8 +12,6 @@ type UserModel struct {
 	Phone  string `json:"phone" form:"phone" valid:"matches(^1[3-9]{1}\\d{9}$)" bson:"phone"`
 	Tokens []Token `bson:"tokens"`
 	Other  map[string]any `bson:"others"`
-	DeleteTime time.Duration `bson:"delete_time"`
-	//bson:"user"
 }
 
 type TokenModel struct {
@@ -22,7 +20,6 @@ type TokenModel struct {
 	UserId       Uid `bson:"user_id" valid:"required"`
 	CreateTime time.Duration `bson:"create_time"`
 	UpdateTime time.Duration `bson:"update_time"`
-	DeleteTime time.Duration `bson:"delete_time"`
 	Models     []string `bson:"models"`
 	Plugins    []string `bson:"plugins"`
 	Disabled   bool `bson:"disabled"`
