@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -78,11 +79,20 @@ func (a *Admin) GetUserList(w http.ResponseWriter, r *http.Request){
 	if err := CheckRequestMethod(w, r, "GET"); err != nil {
 		return
 	}
+	p := r.URL.Query().Get("page")
+	var page int
+	if p == "" {
+		page = 1
+	}else{
+		page, _ = strconv.Atoi(p)
+	}
+
 	userList := []UserModel{}
-	err := a.DBFindAll(&userList)
+	// err := a.DBFindAll(&userList)
+	totalPages, err := a.DBFindPage(&userList, page)
 	if err != nil{
 		w.Write(NewResponse(ERROR, Result{}.Message("查询失败：" + err.Error())))
 	}
-	w.Write(NewResponse(OK, Result{}.Data(userList)))
+	w.Write(NewResponse(OK, Result{}.DataAndTotalPages(userList, totalPages)))
 }
 

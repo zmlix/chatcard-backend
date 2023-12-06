@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"reflect"
 	"strings"
@@ -26,6 +27,7 @@ const (
 )
 
 var DBname = "gpt_server"
+var pageSize = 10
 
 type Result struct{}
 
@@ -35,7 +37,11 @@ func (r Result) Message(msg any) map[string]any {
 
 func (r Result) Data(data any) map[string]any{
 	return map[string]any{"data": data}
-} 
+}
+
+func (r Result) DataAndTotalPages(data any, totalPages int) map[string]any{
+	return map[string]any{"data": data, "totalPages": totalPages}
+}
 
 type UserLogin struct {
 	Username string `json:"username"`
@@ -191,6 +197,78 @@ func (a *Admin) DBFindAll(data interface{}) error {
 	return nil
 }
 
+func (a *Admin) DBFindPage(data interface{}, page int) (int, error) {
+	if page < 1 {
+		page = 1
+	}
+	switch data := data.(type) {
+	case *[]UserModel:
+		collection := a.DBClient.Database(DBname).Collection("user")
+		count, err := collection.CountDocuments(context.TODO(), bson.M{})
+		if err != nil {
+			return 0, err
+		}
+		totalPages := int(math.Ceil(float64(count) / float64(pageSize)))
+		if totalPages == 0 {
+			return 0, nil
+		}
+		if page > totalPages {
+			page = totalPages
+		}
+		offset := pageSize * (page - 1)
+		cursor, err := collection.Find(
+			context.TODO(),
+			bson.M{},
+			options.Find().SetSkip(int64(offset)).SetLimit(int64(pageSize)),
+		)
+		if err != nil {
+			return 0, err
+		}
+		defer cursor.Close(context.TODO())
+		for cursor.Next(context.TODO()) {
+			var userModel UserModel
+			if err := cursor.Decode(&userModel); err != nil {
+				return 0, err
+			}
+			*data = append(*data, userModel)
+		}
+		return totalPages, nil
+
+	case *[]TokenModel:
+		collection := a.DBClient.Database(DBname).Collection("token")
+		count, err := collection.CountDocuments(context.TODO(), bson.M{})
+		if err != nil {
+			return 0, err
+		}
+		totalPages := int(math.Ceil(float64(count) / float64(pageSize)))
+		if totalPages == 0 {
+			return 0, nil
+		}
+		if page > totalPages {
+			page = totalPages
+		}
+		offset := pageSize * (page - 1)
+		cursor, err := collection.Find(
+			context.TODO(),
+			bson.M{},
+			options.Find().SetSkip(int64(offset)).SetLimit(int64(pageSize)),
+		)
+		if err != nil {
+			return 0, err
+		}
+		defer cursor.Close(context.TODO())
+		for cursor.Next(context.TODO()) {
+			var tokenModel TokenModel
+			if err := cursor.Decode(&tokenModel); err != nil {
+				return 0, err
+			}
+			*data = append(*data, tokenModel)
+		}
+		return totalPages, nil
+	default:
+		return 0, fmt.Errorf("不支持的数据类型: %T", data)
+	}
+}
 
 //生成用户key
 func generateKey() (string, error) {
