@@ -7,19 +7,16 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
-	"net/http"
 	"reflect"
 	"strings"
 	"time"
 
-	mango "go.mongodb.org/mongo-driver/mongo"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -27,8 +24,14 @@ const (
 	ERROR
 )
 
-var DBname = "gpt_server"
-var pageSize = 10
+const (
+	UserTable  = "user"
+	TokenTable = "token"
+)
+
+const (
+	pageSize = 10
+)
 
 type Result struct{}
 
@@ -36,17 +39,34 @@ func (r Result) Message(msg any) map[string]any {
 	return map[string]any{"message": msg}
 }
 
-func (r Result) Data(data any) map[string]any{
+func (r Result) Data(data any) map[string]any {
 	return map[string]any{"data": data}
 }
 
-func (r Result) DataAndTotalPages(data any, totalPages int) map[string]any{
+func (r Result) DataAndTotalPages(data any, totalPages int) map[string]any {
 	return map[string]any{"data": data, "totalPages": totalPages}
 }
 
 type UserLogin struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type UserCreate struct {
+	Name  string `valid:"required,type(string)"`
+	Phone string `valid:"matches(^1[3-9]{1}\\d{9}$)"`
+}
+
+type UserModify struct {
+	UserId Uid            `json:"id"`
+	Name   string         `json:"name"`
+	Phone  string         `json:"phone"`
+	Other  map[string]any `json:"other"`
+}
+
+type TokenCreate struct {
+	UserId Uid   `json:"id"`
+	Number Quota `json:"number"`
 }
 
 type Response struct {
@@ -64,84 +84,56 @@ func NewResponse(code int, res map[string]any) []byte {
 }
 
 func (a *Admin) ShowAllDatabase() {
-	database, _ := a.DBClient.ListDatabaseNames(context.Background(), bson.D{})
+	database, _ := a.Client.ListDatabaseNames(context.Background(), bson.D{})
 	fmt.Println(database)
 }
 
-
 // DB
-func (a *Admin) DBCreateUserAndToken(user UserModel) error {
-	ctx := context.Background()
-	writeconcern := writeconcern.Majority()
-	session, err := a.DBClient.StartSession()
-	if err != nil {
-		Error(err.Error() + "CreateUserAndToken")
-		Fatal(err)
-		return err
+func (a *Admin) DBCreateUser(u *UserCreate) error {
+	user := &UserModel{
+		Id:    Uid(uuid.New().String()),
+		Name:  u.Name,
+		Phone: u.Phone,
 	}
-	defer session.EndSession(ctx)
 
-	err = session.StartTransaction(
-		options.Transaction().
-			SetWriteConcern(writeconcern),
-	)
+	collection := a.DBClient.Collection(UserTable)
+	_, err := collection.InsertOne(context.TODO(), user)
+	return err
+}
+
+func (a *Admin) DBCreateToken(t *TokenCreate) error {
+	user := a.DBFindUserByID(t.UserId)
+	if user == nil {
+		return fmt.Errorf("用户不存在")
+	}
+	key, err := GenerateKeyByUserID(t.UserId)
 	if err != nil {
-		Fatal(err)
 		return err
 	}
-	if user.Id == ""{
-		userid := uuid.New().String()
-		user.Id = Uid(userid)
-	}else{
-		user, _ = a.DBFindUserByID(user.Id)
-	}
-	keyValue, err := GenerateKeyByUserID(user.Id)
-	if  err != nil{
-		Fatal(err)
-		return errors.New("生成Key失败")
-	}
-	token := TokenModel{
-		UserId: user.Id,
-		Key: Token(keyValue),
-		Number: Quota(0),
+	token := &TokenModel{
+		UserId:     t.UserId,
+		Key:        Token(key),
+		Number:     Quota(t.Number),
 		CreateTime: time.Duration(time.Now().Unix()),
-		Disabled: true,
-	}
-	user.Tokens = append(user.Tokens, token.Key)
-	err = a.DBCreate(token)
-	if err != nil {
-		_ = session.AbortTransaction(ctx)
-		Fatal(err)
-		return err
-	}
-	if user.Id == ""{
-		if err = a.DBCreate(user); err != nil {
-			_ = session.AbortTransaction(ctx)
-			Fatal(err)
-			return err
-		}
-	}else{
-		if err = a.DBUpdateUser(user); err != nil {
-			_ = session.AbortTransaction(ctx)
-			Fatal(err)
-			return err
-		}
+		UpdateTime: time.Duration(time.Now().Unix()),
+		Disabled:   true,
 	}
 
-	//commit
-	err = session.CommitTransaction(ctx)
+	_, err = a.DBClient.Collection(TokenTable).InsertOne(context.TODO(), token)
 	if err != nil {
-		Error(err.Error() + "CreateUserAndToken")
-		Fatal(err)
 		return err
 	}
-	return nil
+	userTokens := append(user.Tokens, token.Key)
+	filter := bson.M{"id": user.Id}
+	update := bson.D{bson.E{Key: "$set", Value: bson.D{{Key: "tokens", Value: userTokens}}}}
+	_, err = a.DBClient.Collection(UserTable).UpdateOne(context.TODO(), filter, update)
+	return err
 }
 
 func (a *Admin) DBCreate(data interface{}) error {
 	value := reflect.ValueOf(data)
 	if value.Kind() != reflect.Struct {
-		return fmt.Errorf("Expected a struct, got %T", data)
+		return fmt.Errorf("expected a struct, got %T", data)
 	}
 	fields := make(map[string]interface{})
 	for i := 0; i < value.NumField(); i++ {
@@ -156,7 +148,7 @@ func (a *Admin) DBCreate(data interface{}) error {
 
 	collectionName := strings.ToLower(value.Type().Name())
 	collectionName = strings.TrimSuffix(collectionName, "model")
-	collection := a.DBClient.Database(DBname).Collection(collectionName)
+	collection := a.DBClient.Collection(collectionName)
 	if _, err := collection.InsertOne(context.TODO(), fields); err != nil {
 		fmt.Println("Error storing data:", err)
 		return err
@@ -164,34 +156,43 @@ func (a *Admin) DBCreate(data interface{}) error {
 	return nil
 }
 
-func (a *Admin) DBFindUserByName(name string) (UserModel, error) {
-	user := UserModel{}
-	collection := a.DBClient.Database(DBname).Collection("user")
+func (a *Admin) DBFindUserByName(name string) *UserModel {
+	user := &UserModel{}
+	collection := a.DBClient.Collection(UserTable)
 	filter := bson.M{"name": name}
-	err := collection.FindOne(context.TODO(), filter).Decode(&user)
-	return user, err
+	err := collection.FindOne(context.TODO(), filter).Decode(user)
+	if err != nil {
+		return nil
+	}
+	return user
 }
 
-func (a *Admin) DBFindUserByID(id Uid) (UserModel, error) {
-	user := UserModel{}
-	collection := a.DBClient.Database(DBname).Collection("user")
+func (a *Admin) DBFindUserByID(id Uid) *UserModel {
+	user := &UserModel{}
+	collection := a.DBClient.Collection(UserTable)
 	filter := bson.M{"id": id}
-	err := collection.FindOne(context.TODO(), filter).Decode(&user)
-	return user, err
+	err := collection.FindOne(context.TODO(), filter).Decode(user)
+	if err != nil {
+		return nil
+	}
+	return user
 }
 
-func (a *Admin) DBFindTokenByKey(key Token) (TokenModel, error) {
-	token := TokenModel{}
-	collection := a.DBClient.Database(DBname).Collection("user")
+func (a *Admin) DBFindTokenByKey(key Token) *TokenModel {
+	token := &TokenModel{}
+	collection := a.DBClient.Collection(UserTable)
 	filter := bson.M{"key": key}
-	err := collection.FindOne(context.TODO(), filter).Decode(&token)
-	return token, err
+	err := collection.FindOne(context.TODO(), filter).Decode(token)
+	if err != nil {
+		return nil
+	}
+	return token
 }
 
 func (a *Admin) DBFindAll(data interface{}) error {
 	switch data := data.(type) {
 	case *[]UserModel:
-		collection := a.DBClient.Database(DBname).Collection("user")
+		collection := a.DBClient.Collection(UserTable)
 		cursor, err := collection.Find(context.TODO(), bson.M{})
 		if err != nil {
 			return err
@@ -206,7 +207,7 @@ func (a *Admin) DBFindAll(data interface{}) error {
 		}
 
 	case *[]TokenModel:
-		collection := a.DBClient.Database(DBname).Collection("token")
+		collection := a.DBClient.Collection(TokenTable)
 		cursor, err := collection.Find(context.TODO(), bson.M{})
 		if err != nil {
 			return err
@@ -232,7 +233,7 @@ func (a *Admin) DBFindPage(data interface{}, page int) (int, error) {
 	}
 	switch data := data.(type) {
 	case *[]UserModel:
-		collection := a.DBClient.Database(DBname).Collection("user")
+		collection := a.DBClient.Collection(UserTable)
 		count, err := collection.CountDocuments(context.TODO(), bson.M{})
 		if err != nil {
 			return 0, err
@@ -264,7 +265,7 @@ func (a *Admin) DBFindPage(data interface{}, page int) (int, error) {
 		return totalPages, nil
 
 	case *[]TokenModel:
-		collection := a.DBClient.Database(DBname).Collection("token")
+		collection := a.DBClient.Collection(TokenTable)
 		count, err := collection.CountDocuments(context.TODO(), bson.M{})
 		if err != nil {
 			return 0, err
@@ -299,53 +300,36 @@ func (a *Admin) DBFindPage(data interface{}, page int) (int, error) {
 	}
 }
 
-func (a *Admin) DBUpdate(data interface{}) error {
-	switch v := data.(type){
-	case UserModel:
-		return a.DBUpdateUser(v)
-	case TokenModel:
-		return a.DBUpdateToken(v)
-	default:
-		return fmt.Errorf("不支持的数据类型: %T", data)
+func (a *Admin) DBUpdateUser(user *UserModify) error {
+	userfound := a.DBFindUserByID(user.UserId)
+	if userfound == nil {
+		return fmt.Errorf("用户不存在")
 	}
-}
-
-func (a *Admin) DBUpdateUser(user UserModel) error {
-	userfound, err := a.DBFindUserByID(user.Id);
-	if  err != nil {
-		return err
-	}
-	collection := a.DBClient.Database(DBname).Collection("user")
-	filter := bson.M{"id": user.Id}
+	collection := a.DBClient.Collection(UserTable)
+	filter := bson.M{"id": user.UserId}
 	update := bson.D{}
 	if user.Name != "" {
-		if _, err := a.DBFindUserByName(user.Name); err == mango.ErrNoDocuments || userfound.Name == user.Name {
+		if u := a.DBFindUserByName(user.Name); u == nil || userfound.Id == user.UserId {
 			update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "name", Value: user.Name}}})
-		}else{
+		} else {
 			return fmt.Errorf("用户名已存在")
 		}
 	}
 	if user.Phone != "" {
 		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "phone", Value: user.Phone}}})
 	}
-	if len(user.Tokens) > 0 {
-		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "tokens", Value: user.Tokens}}})
-	}
 	if len(user.Other) > 0 {
 		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "others", Value: user.Other}}})
 	}
-	_, err = collection.UpdateOne(context.TODO(), filter, update)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := collection.UpdateOne(context.TODO(), filter, update)
+	return err
 }
 
-func (a *Admin) DBUpdateToken(token TokenModel) error {
-	if _, err := a.DBFindTokenByKey(token.Key); err != nil {
-		return nil
+func (a *Admin) DBUpdateToken(token *TokenModel) error {
+	if userfound := a.DBFindTokenByKey(token.Key); userfound == nil {
+		return fmt.Errorf("Token不存在")
 	}
-	collection := a.DBClient.Database(DBname).Collection("token")
+	collection := a.DBClient.Collection(TokenTable)
 	filter := bson.M{"key": token.Key}
 	update := bson.D{}
 	if token.Number != 0 {
@@ -373,20 +357,17 @@ func (a *Admin) DBUpdateToken(token TokenModel) error {
 		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "others", Value: token.Other}}})
 	}
 	_, err := collection.UpdateOne(context.TODO(), filter, update)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
-//生成用户key
+// 生成用户key
 func generateKey() (string, error) {
-    key := make([]byte, 32)
-    _, err := rand.Read(key)
-    if err != nil {
-        return "", err
-    }
-    return base64.URLEncoding.EncodeToString(key), nil
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(key), nil
 }
 
 func GenerateKeyByUserID(userID Uid) (string, error) {
@@ -394,20 +375,14 @@ func GenerateKeyByUserID(userID Uid) (string, error) {
 	if err != nil {
 		return "", err
 	}
-    h := hmac.New(sha256.New, []byte(secretKey))
-    _, err = h.Write([]byte(userID))
-    if err != nil {
-        return "", err
-    }
-    return base64.URLEncoding.EncodeToString(h.Sum(nil)), nil
-}
-
-func CheckRequestMethod(w http.ResponseWriter, r *http.Request, method string) error {
-	if r.Method == method{
-		return nil
-	}else{
-		w.Write(NewResponse(ERROR, Result{}.Message("请求方法错误！")))
-		return errors.New("请求方法错误！")
+	h := hmac.New(sha256.New, []byte(secretKey))
+	_, err = h.Write([]byte(userID))
+	if err != nil {
+		return "", err
 	}
+	return base64.URLEncoding.EncodeToString(h.Sum(nil)), nil
 }
 
+func CheckRequestMethod(method string, methods []string) bool {
+	return slices.Contains(methods, method)
+}

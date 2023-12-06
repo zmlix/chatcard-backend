@@ -12,15 +12,27 @@ import (
 )
 
 type Admin struct {
-	DBClient *mongo.Client
+	Client   *mongo.Client
+	DBName   string
+	DBClient *mongo.Database
+}
+
+func (a *Admin) SetDBClient(db *mongo.Database) {
+	if db == nil {
+		a.DBClient = a.Client.Database(a.DBName)
+	} else {
+		a.DBClient = db
+	}
 }
 
 func New() *Admin {
 	uri, ok := os.LookupEnv("MONGODB_URI")
-	dbname, _ := os.LookupEnv("DBNAME")
-	DBname = dbname
 	if !ok {
 		log.Fatalf("请设置环境变量MONGODB_URI")
+	}
+	dbname, ok := os.LookupEnv("DBNAME")
+	if !ok {
+		log.Fatalf("请设置环境变量DBNAME")
 	}
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
@@ -28,7 +40,9 @@ func New() *Admin {
 		panic(err)
 	}
 	return &Admin{
-		DBClient: client,
+		Client:   client,
+		DBName:   dbname,
+		DBClient: client.Database(dbname),
 	}
 }
 
@@ -49,7 +63,7 @@ func Run(addr string, admin *Admin) {
 		Addr:    addr,
 		Handler: handler,
 	}
-	Info( "Admin running in %s ..." , addr)
+	Info("Admin running in %s ...", addr)
 	server.ListenAndServe()
 }
 

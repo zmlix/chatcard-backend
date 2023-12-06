@@ -53,77 +53,90 @@ func (a *Admin) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Admin) CreateUser(w http.ResponseWriter, r *http.Request) {
-	if err := CheckRequestMethod(w, r, "POST"); err != nil {
+	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	user := UserModel{}
-	json.NewDecoder(r.Body).Decode(&user)
+
+	user := &UserCreate{}
+	json.NewDecoder(r.Body).Decode(user)
 	_, err := govalidator.ValidateStruct(user)
 	if err != nil {
-		w.Write(NewResponse(ERROR, Result{}.Message("检验不通过：" + err.Error())))
+		w.Write(NewResponse(ERROR, Result{}.Message("检验不通过："+err.Error())))
 		return
 	}
-	userfound, _ := a.DBFindUserByName(user.Name)
-	if  userfound.Id != "" {
-		w.Write(NewResponse(ERROR, Result{}.Message("用户名已存在")))
+
+	if userfound := a.DBFindUserByName(user.Name); userfound != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("用户"+userfound.Name+"已存在")))
 		return
 	}
-	if err := a.DBCreateUserAndToken(user); err != nil {
-		w.Write(NewResponse(ERROR, Result{}.Message("创建失败：" + err.Error())))
+
+	if err := a.DBCreateUser(user); err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("创建失败："+err.Error())))
 		return
 	}
 	w.Write(NewResponse(OK, Result{}.Message("创建成功!")))
 }
 
-func (a *Admin) GetUserList(w http.ResponseWriter, r *http.Request){
-	if err := CheckRequestMethod(w, r, "GET"); err != nil {
+func (a *Admin) GetUserList(w http.ResponseWriter, r *http.Request) {
+	if !CheckRequestMethod(r.Method, []string{http.MethodGet}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	p := r.URL.Query().Get("page")
+
+	var err error
 	var page int
-	if p == "" {
+	if r.URL.Query().Has("page") {
+		page, err = strconv.Atoi(r.URL.Query().Get("page"))
+		if err != nil {
+			w.Write(NewResponse(ERROR, Result{}.Message("page值非法")))
+		}
+	} else {
 		page = 1
-	}else{
-		page, _ = strconv.Atoi(p)
 	}
 	userList := []UserModel{}
 	// err := a.DBFindAll(&userList)
 	totalPages, err := a.DBFindPage(&userList, page)
-	if err != nil{
-		w.Write(NewResponse(ERROR, Result{}.Message("查询失败：" + err.Error())))
+	if err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("查询失败："+err.Error())))
+		return
 	}
 	w.Write(NewResponse(OK, Result{}.DataAndTotalPages(userList, totalPages)))
 }
 
-func (a *Admin) UpdateUser(w http.ResponseWriter, r *http.Request){
-	if err := CheckRequestMethod(w, r, "POST"); err != nil {
+func (a *Admin) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	user := UserModel{}
-	json.NewDecoder(r.Body).Decode(&user)
-	if user.Id == "" {
+
+	user := &UserModify{}
+	json.NewDecoder(r.Body).Decode(user)
+	if user.UserId == "" {
 		w.Write(NewResponse(ERROR, Result{}.Message("用户ID不能为空")))
 		return
 	}
-	if err := a.DBUpdate(user); err != nil {
-		w.Write(NewResponse(ERROR, Result{}.Message("更新失败：" + err.Error())))
+	if err := a.DBUpdateUser(user); err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("更新失败："+err.Error())))
 		return
 	}
 	w.Write(NewResponse(OK, Result{}.Message("更新成功")))
 }
 
 func (a *Admin) CreateToken(w http.ResponseWriter, r *http.Request) {
-	if err := CheckRequestMethod(w, r, "POST"); err != nil {
+	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	user := UserModel{}
-	json.NewDecoder(r.Body).Decode(&user)
-	if user.Id == "" {
+
+	token := &TokenCreate{}
+	json.NewDecoder(r.Body).Decode(token)
+	if token.UserId == "" {
 		w.Write(NewResponse(ERROR, Result{}.Message("用户ID不能为空")))
 		return
 	}
-	if err := a.DBCreateUserAndToken(user); err != nil {
-		w.Write(NewResponse(ERROR, Result{}.Message("创建失败：" + err.Error())))
+	if err := a.DBCreateToken(token); err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("创建失败："+err.Error())))
 		return
 	}
 	w.Write(NewResponse(OK, Result{}.Message("创建成功!")))

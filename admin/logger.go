@@ -8,11 +8,10 @@ import (
 	"time"
 )
 
-var infoLogger *log.Logger 
+var infoLogger *log.Logger
 var warnLogger *log.Logger
 var errorLogger *log.Logger
 var debugLogger *log.Logger
-
 
 func init() {
 	logDir := "logs"
@@ -24,7 +23,7 @@ func init() {
 	logFilePath := filepath.Join(logDir, fmt.Sprintf("share-%s.log", time.Now().In(loc).Format("2006-01-02")))
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		os.MkdirAll(logDir, 0755)
-	}	
+	}
 	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0755)
 	if err != nil {
 		log.Fatalln("fail to create share.log", err)
@@ -36,7 +35,7 @@ func init() {
 }
 
 func Info(format string, v ...interface{}) {
-	if v == nil{
+	if v == nil {
 		infoLogger.Println(format)
 	} else {
 		infoLogger.Printf(format+"\t", v)
@@ -44,7 +43,7 @@ func Info(format string, v ...interface{}) {
 }
 
 func Warn(format string, v ...interface{}) {
-	if v == nil{
+	if v == nil {
 		warnLogger.Println(format)
 	} else {
 		warnLogger.Printf(format+"\t", v)
@@ -52,7 +51,7 @@ func Warn(format string, v ...interface{}) {
 }
 
 func Error(format string, v ...interface{}) {
-	if v == nil{
+	if v == nil {
 		errorLogger.Println(format)
 	} else {
 		errorLogger.Printf(format+"\t", v)
@@ -60,7 +59,7 @@ func Error(format string, v ...interface{}) {
 }
 
 func Debug(format string, v ...interface{}) {
-	if v == nil{
+	if v == nil {
 		debugLogger.Println(format)
 	} else {
 		debugLogger.Printf(format+"\t", v)
