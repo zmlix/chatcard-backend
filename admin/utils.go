@@ -89,9 +89,12 @@ func (a *Admin) DBCreateUserAndToken(user UserModel) error {
 		Fatal(err)
 		return err
 	}
-
-	userid := uuid.New().String()
-	user.Id = Uid(userid)
+	if user.Id == ""{
+		userid := uuid.New().String()
+		user.Id = Uid(userid)
+	}else{
+		user, _ = a.DBFindUserByID(user.Id)
+	}
 	keyValue, err := GenerateKeyByUserID(user.Id)
 	if  err != nil{
 		Fatal(err)
@@ -111,11 +114,20 @@ func (a *Admin) DBCreateUserAndToken(user UserModel) error {
 		Fatal(err)
 		return err
 	}
-	if err = a.DBCreate(user); err != nil {
-		_ = session.AbortTransaction(ctx)
-		Fatal(err)
-		return err
+	if user.Id == ""{
+		if err = a.DBCreate(user); err != nil {
+			_ = session.AbortTransaction(ctx)
+			Fatal(err)
+			return err
+		}
+	}else{
+		if err = a.DBUpdateUser(user); err != nil {
+			_ = session.AbortTransaction(ctx)
+			Fatal(err)
+			return err
+		}
 	}
+
 	//commit
 	err = session.CommitTransaction(ctx)
 	if err != nil {

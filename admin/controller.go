@@ -111,3 +111,20 @@ func (a *Admin) UpdateUser(w http.ResponseWriter, r *http.Request){
 	}
 	w.Write(NewResponse(OK, Result{}.Message("更新成功")))
 }
+
+func (a *Admin) CreateToken(w http.ResponseWriter, r *http.Request) {
+	if err := CheckRequestMethod(w, r, "POST"); err != nil {
+		return
+	}
+	user := UserModel{}
+	json.NewDecoder(r.Body).Decode(&user)
+	if user.Id == "" {
+		w.Write(NewResponse(ERROR, Result{}.Message("用户ID不能为空")))
+		return
+	}
+	if err := a.DBCreateUserAndToken(user); err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("创建失败：" + err.Error())))
+		return
+	}
+	w.Write(NewResponse(OK, Result{}.Message("创建成功!")))
+}

@@ -50,3 +50,12 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6
     "name":"hlwinmax",
     "phone":"17256481236"
 }
+
+### 
+POST http://localhost:5201/v1/token/create HTTP/1.1
+content-type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTg2MDExOH0.FtX4y01V8eraTZqy3pJOGhTH4pzvgZN1yMitwL37kBM
+
+{
+    "id":"e293b3a0-3769-46cb-be75-ed1636795eae"
+}
