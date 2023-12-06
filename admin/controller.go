@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/asaskevich/govalidator"
@@ -78,10 +79,35 @@ func (a *Admin) GetUserList(w http.ResponseWriter, r *http.Request){
 	if err := CheckRequestMethod(w, r, "GET"); err != nil {
 		return
 	}
-	userlist, err := a.DBFindALL(UserModel{})
+	p := r.URL.Query().Get("page")
+	var page int
+	if p == "" {
+		page = 1
+	}else{
+		page, _ = strconv.Atoi(p)
+	}
+	userList := []UserModel{}
+	// err := a.DBFindAll(&userList)
+	totalPages, err := a.DBFindPage(&userList, page)
 	if err != nil{
 		w.Write(NewResponse(ERROR, Result{}.Message("查询失败：" + err.Error())))
 	}
-	w.Write(NewResponse(OK, Result{}.Data(userlist)))
+	w.Write(NewResponse(OK, Result{}.DataAndTotalPages(userList, totalPages)))
 }
 
+func (a *Admin) UpdateUser(w http.ResponseWriter, r *http.Request){
+	if err := CheckRequestMethod(w, r, "POST"); err != nil {
+		return
+	}
+	user := UserModel{}
+	json.NewDecoder(r.Body).Decode(&user)
+	if user.Id == "" {
+		w.Write(NewResponse(ERROR, Result{}.Message("用户ID不能为空")))
+		return
+	}
+	if err := a.DBUpdate(user); err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("更新失败：" + err.Error())))
+		return
+	}
+	w.Write(NewResponse(OK, Result{}.Message("更新成功")))
+}

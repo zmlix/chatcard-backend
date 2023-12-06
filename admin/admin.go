@@ -62,6 +62,8 @@ func (a *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.CreateUser(w, r)
 	case "/v1/user/getuserlist":
 		a.GetUserList(w, r)
+	case "/v1/user/update":
+		a.UpdateUser(w, r)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 	}
