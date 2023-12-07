@@ -181,3 +181,42 @@ func (a *Admin) GetTokenList(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(NewResponse(OK, Result{}.DataAndTotalPages(tokenList, totalPages)))
 }
+
+func (a *Admin) UpdateTokenNumber(w http.ResponseWriter, r *http.Request) {
+	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	token := TokenUpdateNumber{}
+	json.NewDecoder(r.Body).Decode(&token)
+	_, err := govalidator.ValidateStruct(token)
+	if err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("数据检验不通过："+err.Error())))
+		return
+	}
+	if err := a.DBUpdateTokenNumber(&token); err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("UpdateTokenNumber失败: "+ err.Error())))
+		return
+	}
+	w.Write(NewResponse(OK, Result{}.Message("操作成功")))
+}
+
+func (a *Admin) GetTokenByKey(w http.ResponseWriter, r *http.Request){
+	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	key := TokenGetByKey{}
+	json.NewDecoder(r.Body).Decode(&key)
+	if key.Key == "" {
+		w.Write(NewResponse(ERROR, Result{}.Message("key值不能为空")))
+		return
+	}
+
+	token := a.DBFindTokenByKey(key.Key)
+	if token == nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("查询为空")))
+		return
+	}
+	w.Write(NewResponse(OK, Result{}.Data(token)))
+}

@@ -84,6 +84,10 @@ func (a *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.GetTokenList(w, r)
 	case "/v1/token/delete":
 		a.DeleteToken(w, r)
+	case "/v1/token/updatenumber":
+		a.UpdateTokenNumber(w, r)
+	case "/v1/token/getbykey":
+		a.GetTokenByKey(w, r)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 	}
