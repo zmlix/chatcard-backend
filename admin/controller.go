@@ -157,3 +157,27 @@ func (a *Admin) DeleteToken(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(NewResponse(OK, Result{}.Message("删除成功!")))
 }
+
+func (a *Admin) GetTokenList(w http.ResponseWriter, r *http.Request) {
+	if !CheckRequestMethod(r.Method, []string{http.MethodGet}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var err error
+	var page int
+	if r.URL.Query().Has("page") {
+		page, err = strconv.Atoi(r.URL.Query().Get("page"))
+		if err != nil {
+			w.Write(NewResponse(ERROR, Result{}.Message("page值非法")))
+		}
+	} else {
+		page = 1
+	}
+	tokenList := []TokenModel{}
+	totalPages, err := a.DBFindPage(&tokenList, page)
+	if err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("查询失败："+err.Error())))
+		return
+	}
+	w.Write(NewResponse(OK, Result{}.DataAndTotalPages(tokenList, totalPages)))
+}
