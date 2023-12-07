@@ -83,7 +83,6 @@ func (a *Admin) GetUserList(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-
 	var err error
 	var page int
 	if r.URL.Query().Has("page") {
@@ -109,7 +108,6 @@ func (a *Admin) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-
 	user := &UserModify{}
 	json.NewDecoder(r.Body).Decode(user)
 	if user.UserId == "" {
@@ -123,12 +121,12 @@ func (a *Admin) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(NewResponse(OK, Result{}.Message("更新成功")))
 }
 
+
 func (a *Admin) CreateToken(w http.ResponseWriter, r *http.Request) {
 	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-
 	token := &TokenCreate{}
 	json.NewDecoder(r.Body).Decode(token)
 	if token.UserId == "" {
@@ -140,4 +138,22 @@ func (a *Admin) CreateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(NewResponse(OK, Result{}.Message("创建成功!")))
+}
+
+func (a *Admin) DeleteToken(w http.ResponseWriter, r *http.Request) {
+	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	token := &TokenDelete{}
+	json.NewDecoder(r.Body).Decode(token)
+	if token.Key == "" {
+		w.Write(NewResponse(ERROR, Result{}.Message("key值不能为空")))
+		return
+	}
+	if err := a.DBDeleteToken(token); err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("删除失败："+err.Error())))
+		return
+	}
+	w.Write(NewResponse(OK, Result{}.Message("删除成功!")))
 }

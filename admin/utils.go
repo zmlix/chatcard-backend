@@ -69,6 +69,10 @@ type TokenCreate struct {
 	Number Quota `json:"number"`
 }
 
+type TokenDelete struct {
+	Key Token `json:"key"`
+}
+
 type Response struct {
 	Code   int
 	Result map[string]any
@@ -123,9 +127,8 @@ func (a *Admin) DBCreateToken(t *TokenCreate) error {
 	if err != nil {
 		return err
 	}
-	userTokens := append(user.Tokens, token.Key)
 	filter := bson.M{"id": user.Id}
-	update := bson.D{bson.E{Key: "$set", Value: bson.D{{Key: "tokens", Value: userTokens}}}}
+	update := bson.D{bson.E{Key: "$push", Value: bson.D{{Key: "tokens", Value: token.Key}}}}
 	_, err = a.DBClient.Collection(UserTable).UpdateOne(context.TODO(), filter, update)
 	return err
 }
@@ -180,7 +183,7 @@ func (a *Admin) DBFindUserByID(id Uid) *UserModel {
 
 func (a *Admin) DBFindTokenByKey(key Token) *TokenModel {
 	token := &TokenModel{}
-	collection := a.DBClient.Collection(UserTable)
+	collection := a.DBClient.Collection(TokenTable)
 	filter := bson.M{"key": key}
 	err := collection.FindOne(context.TODO(), filter).Decode(token)
 	if err != nil {
@@ -358,6 +361,38 @@ func (a *Admin) DBUpdateToken(token *TokenModel) error {
 	}
 	_, err := collection.UpdateOne(context.TODO(), filter, update)
 	return err
+}
+
+func (a *Admin) DBDeleteToken(token *TokenDelete) error {
+	tokenfound := a.DBFindTokenByKey(token.Key)
+	if tokenfound == nil {
+		return fmt.Errorf("Token不存在")
+	}
+	collection := a.DBClient.Collection(TokenTable)
+	filter := bson.M{"key": token.Key}
+	if _, err := collection.DeleteOne(context.TODO(), filter); err != nil {
+		return err
+	}
+	userfound := a.DBFindUserByID(tokenfound.UserId)
+	if userfound == nil {
+		return fmt.Errorf("该token无主")
+	}
+	user_collection := a.DBClient.Collection(UserTable)
+	user_filter := bson.M{"id": tokenfound.UserId}
+	update := bson.D{bson.E{Key: "$pull", Value: bson.D{{Key: "tokens", Value: token.Key}}}}
+	_, err := user_collection.UpdateOne(context.TODO(), user_filter, update)
+	return err
+}
+
+func (a *Admin) DBFindTokenByUserId(userId Uid) *TokenModel {
+	collection := a.DBClient.Collection(TokenTable)
+	filter := bson.M{"user_id": userId}
+	var token *TokenModel
+	err := collection.FindOne(context.TODO(), filter).Decode(&token)
+	if err != nil {
+		return nil
+	}
+	return token
 }
 
 // 生成用户key
