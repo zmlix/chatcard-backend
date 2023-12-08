@@ -73,6 +73,15 @@ type TokenDelete struct {
 	Key Token `json:"key"`
 }
 
+type TokenUpdateNumber struct{
+	Key Token `json:"key" valid:"required"`
+	Number Quota `json:"number" valid:"required"`
+}
+
+type TokenGetByKey struct{
+	Key Token `json:"key"`
+}
+
 type Response struct {
 	Code   int
 	Result map[string]any
@@ -328,41 +337,6 @@ func (a *Admin) DBUpdateUser(user *UserModify) error {
 	return err
 }
 
-func (a *Admin) DBUpdateToken(token *TokenModel) error {
-	if userfound := a.DBFindTokenByKey(token.Key); userfound == nil {
-		return fmt.Errorf("Token不存在")
-	}
-	collection := a.DBClient.Collection(TokenTable)
-	filter := bson.M{"key": token.Key}
-	update := bson.D{}
-	if token.Number != 0 {
-		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "number", Value: token.Number}}})
-	}
-	if token.UserId != "" {
-		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "user_id", Value: token.UserId}}})
-	}
-	if token.CreateTime != 0 {
-		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "create_time", Value: token.CreateTime}}})
-	}
-	if token.UpdateTime != 0 {
-		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "update_time", Value: token.UpdateTime}}})
-	}
-	if len(token.Models) > 0 {
-		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "models", Value: token.Models}}})
-	}
-	if len(token.Plugins) > 0 {
-		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "plugins", Value: token.Plugins}}})
-	}
-	if token.Disabled {
-		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "disabled", Value: token.Disabled}}})
-	}
-	if len(token.Other) > 0 {
-		update = append(update, bson.E{Key: "$set", Value: bson.D{{Key: "others", Value: token.Other}}})
-	}
-	_, err := collection.UpdateOne(context.TODO(), filter, update)
-	return err
-}
-
 func (a *Admin) DBDeleteToken(token *TokenDelete) error {
 	tokenfound := a.DBFindTokenByKey(token.Key)
 	if tokenfound == nil {
@@ -393,6 +367,24 @@ func (a *Admin) DBFindTokenByUserId(userId Uid) *TokenModel {
 		return nil
 	}
 	return token
+}
+
+func (a *Admin) DBUpdateTokenNumber(token *TokenUpdateNumber) error {
+	tokenfound := a.DBFindTokenByKey(token.Key)
+	if tokenfound == nil {
+		return fmt.Errorf("token不存在")
+	}
+	if (tokenfound.Number + token.Number < 0) && token.Number < 0{
+		return fmt.Errorf("token Number 不足")
+	}
+	collection := a.DBClient.Collection(TokenTable)
+	filter := bson.M{"key": token.Key}
+	update := bson.D{{Key: "$inc", Value: bson.D{{Key: "number", Value: token.Number}}}, 
+	{Key: "$set", Value: bson.D{{Key: "update_time", Value: time.Now().Unix()}}}}
+    if _, err := collection.UpdateOne(context.TODO(), filter, update); err != nil {
+        return err
+    }
+    return nil
 }
 
 // 生成用户key

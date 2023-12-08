@@ -72,3 +72,21 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6
 ###
 GET http://localhost:5201/v1/token/gettokenlist HTTP/1.1
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
+
+### 
+POST http://localhost:5201/v1/token/updatenumber HTTP/1.1
+content-type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
+
+{
+    "key":"FfRkxz7c2iZ3wnGrzDM8Uw71GNjzVsTKnfzMZ1p8hoc=",
+    "number":10
+}
+
+###
+POST http://localhost:5201/v1/token/getbykey HTTP/1.1
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
+
+{
+    "key":"FfRkxz7c2iZ3wnGrzDM8Uw71GNjzVsTKnfzMZ1p8hoc="
+}
