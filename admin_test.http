@@ -68,3 +68,7 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6
 {
     "key":"c1bPHzUgwOy9ETr190HX4LqBQeJErvcSeI2lg3VGeco="
 }
+
+###
+GET http://localhost:5201/v1/token/gettokenlist HTTP/1.1
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
