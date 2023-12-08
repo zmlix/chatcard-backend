@@ -46,8 +46,8 @@ content-type: application/json
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
 
 {
-    "id":"3941179f-9284-4be7-a086-a9d14e07d3ad",
-    "name":"hlwinmax",
+    "id":"28a44754-db83-4ce5-adb0-86da32b93221",
+    "name":"TheShy",
     "phone":"17256481236"
 }
 
@@ -57,5 +57,14 @@ content-type: application/json
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
 
 {
-    "id":"3941179f-9284-4be7-a086-a9d14e07d3ad"
+    "id":"28a44754-db83-4ce5-adb0-86da32b93221"
+}
+
+### 
+POST http://localhost:5201/v1/token/delete HTTP/1.1
+content-type: application/json
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
+
+{
+    "key":"c1bPHzUgwOy9ETr190HX4LqBQeJErvcSeI2lg3VGeco="
 }
