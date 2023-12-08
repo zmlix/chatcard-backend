@@ -220,3 +220,25 @@ func (a *Admin) GetTokenByKey(w http.ResponseWriter, r *http.Request){
 	}
 	w.Write(NewResponse(OK, Result{}.Data(token)))
 }
+
+func (a *Admin) DeleteUser(w http.ResponseWriter, r *http.Request){
+	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	user := UserDelete{}
+	json.NewDecoder(r.Body).Decode(&user)
+	if user.Id == "" {
+		w.Write(NewResponse(ERROR, Result{}.Message("用户Id不能为空")))
+		return
+	}
+	if userfound := a.DBFindUserByID(user.Id); userfound == nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("用户不存在")))
+		return
+	}
+	if err := a.DBDeleteUser(&user); err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("删除失败: "+ err.Error())))
+		return
+	}
+	w.Write(NewResponse(OK, Result{}.Message("删除成功")))
+}	

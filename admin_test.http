@@ -11,17 +11,6 @@ Authorization: Bearer lzm
 
 GET http://localhost:5201/v1/login HTTP/1.1
 
-###
-
-POST http://localhost:5201/v1/user/create HTTP/1.1
-content-type: application/json
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
-
-{
-    "name": "hl",
-    "phone": ""
-}
-
 ### 
 GET http://localhost:5201/v1/user/getuserlist?page=2 HTTP/1.1
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
@@ -34,10 +23,10 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6
 ### 
 POST http://localhost:5201/v1/user/create HTTP/1.1
 content-type: application/json
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMjExMTIzMX0.pSI-ogfnRJwHe1fup03a_Pju4WKt_FbYjf-Y6jIpXlc
 
 {
-    "name":"hl3"
+    "name":"Rookie"
 }
 
 ### 
@@ -51,22 +40,30 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6
     "phone":"17256481236"
 }
 
+###
+POST http://localhost:5201/v1/user/delete HTTP/1.1
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMjExMTIzMX0.pSI-ogfnRJwHe1fup03a_Pju4WKt_FbYjf-Y6jIpXlc
+
+{
+    "id":"11c0f2ab-8aa9-43b3-ac7d-4d104089266e"
+}
+
 ### 
 POST http://localhost:5201/v1/token/create HTTP/1.1
 content-type: application/json
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMjExMTIzMX0.pSI-ogfnRJwHe1fup03a_Pju4WKt_FbYjf-Y6jIpXlc
 
 {
-    "id":"28a44754-db83-4ce5-adb0-86da32b93221"
+    "id":"11c0f2ab-8aa9-43b3-ac7d-4d104089266e"
 }
 
 ### 
 POST http://localhost:5201/v1/token/delete HTTP/1.1
 content-type: application/json
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMjExMTIzMX0.pSI-ogfnRJwHe1fup03a_Pju4WKt_FbYjf-Y6jIpXlc
 
 {
-    "key":"c1bPHzUgwOy9ETr190HX4LqBQeJErvcSeI2lg3VGeco="
+    "key":"tPppKZVAQ5dFFAqVuba-CmWWEnHu9K-TVKfTQ6iYPZY="
 }
 
 ###
@@ -76,7 +73,7 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6
 ### 
 POST http://localhost:5201/v1/token/updatenumber HTTP/1.1
 content-type: application/json
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMTk0MTEzNn0.wFUa6yG7k7OdNNzJ22mWANoOgwzjxZZY_UX8LsE3PXM
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMjExMTIzMX0.pSI-ogfnRJwHe1fup03a_Pju4WKt_FbYjf-Y6jIpXlc
 
 {
     "key":"FfRkxz7c2iZ3wnGrzDM8Uw71GNjzVsTKnfzMZ1p8hoc=",
@@ -90,3 +87,4 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6
 {
     "key":"FfRkxz7c2iZ3wnGrzDM8Uw71GNjzVsTKnfzMZ1p8hoc="
 }
+

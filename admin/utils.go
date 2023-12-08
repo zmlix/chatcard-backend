@@ -64,6 +64,10 @@ type UserModify struct {
 	Other  map[string]any `json:"other"`
 }
 
+type UserDelete struct {
+	Id Uid  `json:"id"`
+}
+
 type TokenCreate struct {
 	UserId Uid   `json:"id"`
 	Number Quota `json:"number"`
@@ -137,7 +141,8 @@ func (a *Admin) DBCreateToken(t *TokenCreate) error {
 		return err
 	}
 	filter := bson.M{"id": user.Id}
-	update := bson.D{bson.E{Key: "$push", Value: bson.D{{Key: "tokens", Value: token.Key}}}}
+	tokens := append(user.Tokens, Token(key))
+	update := bson.D{bson.E{Key: "$set", Value: bson.D{{Key: "tokens", Value: tokens}}}}
 	_, err = a.DBClient.Collection(UserTable).UpdateOne(context.TODO(), filter, update)
 	return err
 }
@@ -385,6 +390,21 @@ func (a *Admin) DBUpdateTokenNumber(token *TokenUpdateNumber) error {
         return err
     }
     return nil
+}
+
+func (a *Admin) DBDeleteUser(user *UserDelete) error {
+	user_collection := a.DBClient.Collection(UserTable)
+	token_collection := a.DBClient.Collection(TokenTable)
+	user_filter := bson.M{"id": user.Id}
+	token_filter := bson.M{"user_id": user.Id}
+
+	if _, err := user_collection.DeleteOne(context.TODO(), user_filter); err != nil {
+		return err
+	}
+	if _, err := token_collection.DeleteMany(context.TODO(), token_filter); err != nil {
+		return err
+	}
+	return nil
 }
 
 // 生成用户key
