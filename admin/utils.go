@@ -68,6 +68,10 @@ type UserDelete struct {
 	Id Uid  `json:"id"`
 }
 
+type UserGetById struct{
+	Id Uid `json:"id"`
+}
+
 type TokenCreate struct {
 	UserId Uid   `json:"id"`
 	Number Quota `json:"number"`

@@ -4,7 +4,7 @@ Authorization: Bearer lzm
 
 {
     "username": "admin",
-    "password": "123456"
+    "password": "123"
 }
 
 ###
@@ -46,6 +46,14 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6
 
 {
     "id":"11c0f2ab-8aa9-43b3-ac7d-4d104089266e"
+}
+
+###
+POST http://localhost:5201/v1/user/getbyid HTTP/1.1
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTcwMjI4MjA5OH0.nM-VJxHyZSeVETBynhG6FKn3JIOKGTtca8LDBWfCmtk
+
+{
+    "id":"28a44754-db83-4ce5-adb0-86da32b93221"
 }
 
 ### 

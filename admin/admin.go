@@ -80,6 +80,8 @@ func (a *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.UpdateUser(w, r)
 	case "/v1/user/delete":
 		a.DeleteUser(w, r)
+	case "/v1/user/getbyid":
+		a.GetUserById(w, r)
 	case "/v1/token/create":
 		a.CreateToken(w, r)
 	case "/v1/token/gettokenlist":

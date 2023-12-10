@@ -242,3 +242,22 @@ func (a *Admin) DeleteUser(w http.ResponseWriter, r *http.Request){
 	}
 	w.Write(NewResponse(OK, Result{}.Message("删除成功")))
 }	
+
+func (a *Admin) GetUserById(w http.ResponseWriter, r *http.Request){
+	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	user := UserGetById{}
+	json.NewDecoder(r.Body).Decode(&user)
+	if user.Id == "" {
+		w.Write(NewResponse(ERROR, Result{}.Message("用户Id不能为空")))
+		return
+	}
+	userfound := a.DBFindUserByID(user.Id)
+	if  userfound == nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("用户不存在")))
+		return
+	}
+	w.Write(NewResponse(OK, Result{}.Data(userfound)))
+}
