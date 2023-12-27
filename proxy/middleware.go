@@ -3,12 +3,48 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 )
 
 type AuthMiddleware struct {
 	Next http.Handler
+}
+
+type Result struct {
+	Code   int
+	Result struct {
+		Message bool `json:"message"`
+	}
+}
+
+func checkToken(url, token string) (Result, error) {
+	client := &http.Client{}
+	data := Result{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return data, fmt.Errorf("创建请求失败: %w", err)
+	}
+	req.Header.Set("Authorization", token)
+	req.Header.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return data, fmt.Errorf("请求失败: %w", err)
+	}
+
+	defer resp.Body.Close()
+
+	fmt.Println(resp.Body)
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&data)
+	if err != nil {
+		return data, fmt.Errorf("读取请求结果失败: %w", err)
+	}
+
+	log.Println(data)
+	return data, nil
 }
 
 func (m *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -41,10 +77,14 @@ func (m *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := matches[1]
-	fmt.Println("key", key)
+	res, err := checkToken("http://localhost:5201/v1/token/check", Authorization)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
-	if key != "lzm" {
+	if !res.Result.Message {
 		w.WriteHeader(http.StatusUnauthorized)
 		errMsg, _ := json.Marshal(RequestError{
 			Message: "无效的Key",

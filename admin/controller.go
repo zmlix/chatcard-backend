@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -121,7 +122,6 @@ func (a *Admin) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(NewResponse(OK, Result{}.Message("更新成功")))
 }
 
-
 func (a *Admin) CreateToken(w http.ResponseWriter, r *http.Request) {
 	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -195,13 +195,13 @@ func (a *Admin) UpdateTokenNumber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := a.DBUpdateTokenNumber(&token); err != nil {
-		w.Write(NewResponse(ERROR, Result{}.Message("UpdateTokenNumber失败: "+ err.Error())))
+		w.Write(NewResponse(ERROR, Result{}.Message("UpdateTokenNumber失败: "+err.Error())))
 		return
 	}
 	w.Write(NewResponse(OK, Result{}.Message("操作成功")))
 }
 
-func (a *Admin) GetTokenByKey(w http.ResponseWriter, r *http.Request){
+func (a *Admin) GetTokenByKey(w http.ResponseWriter, r *http.Request) {
 	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -221,7 +221,7 @@ func (a *Admin) GetTokenByKey(w http.ResponseWriter, r *http.Request){
 	w.Write(NewResponse(OK, Result{}.Data(token)))
 }
 
-func (a *Admin) DeleteUser(w http.ResponseWriter, r *http.Request){
+func (a *Admin) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -237,8 +237,29 @@ func (a *Admin) DeleteUser(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	if err := a.DBDeleteUser(&user); err != nil {
-		w.Write(NewResponse(ERROR, Result{}.Message("删除失败: "+ err.Error())))
+		w.Write(NewResponse(ERROR, Result{}.Message("删除失败: "+err.Error())))
 		return
 	}
 	w.Write(NewResponse(OK, Result{}.Message("删除成功")))
-}	
+}
+
+func (a *Admin) CheckToken(w http.ResponseWriter, r *http.Request) {
+	if !CheckRequestMethod(r.Method, []string{http.MethodGet}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	Authorization := r.Header.Get("Authorization")
+	if Authorization == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	pattern, _ := regexp.Compile(`Bearer (.+)`)
+	matches := pattern.FindStringSubmatch(Authorization)
+	token := a.DBFindTokenByKey(Token(matches[1]))
+
+	if token == nil {
+		w.Write(NewResponse(ERROR, Result{}.Message(false)))
+		return
+	}
+	w.Write(NewResponse(ERROR, Result{}.Message(!token.Disabled)))
+}
