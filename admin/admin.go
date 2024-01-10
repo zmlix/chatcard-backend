@@ -72,6 +72,8 @@ func (a *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/v1/login":
 		a.Login(w, r)
+	case "/v1/token/check":
+		a.CheckToken(w, r)
 	case "/v1/user/create":
 		a.CreateUser(w, r)
 	case "/v1/user/getuserlist":

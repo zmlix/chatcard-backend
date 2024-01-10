@@ -27,6 +27,14 @@ func (m *AuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		m.Next.ServeHTTP(w, r)
 		return
 	}
+	if r.URL.Path == "/v1/token/check" {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		m.Next.ServeHTTP(w, r)
+		return
+	}
 
 	secretkey, ok := os.LookupEnv("ADMIN_SECRETKEY")
 	if !ok {

@@ -76,7 +76,11 @@ type UserModify struct {
 }
 
 type UserDelete struct {
-	Id Uid  `json:"id"`
+	Id Uid `json:"id"`
+}
+
+type UserGetById struct {
+	Id Uid `json:"id"`
 }
 
 type UserGetById struct{
@@ -92,12 +96,12 @@ type TokenDelete struct {
 	Key Token `json:"key"`
 }
 
-type TokenUpdateNumber struct{
-	Key Token `json:"key" valid:"required"`
+type TokenUpdateNumber struct {
+	Key    Token `json:"key" valid:"required"`
 	Number Quota `json:"number" valid:"required"`
 }
 
-type TokenGetByKey struct{
+type TokenGetByKey struct {
 	Key Token `json:"key"`
 }
 
@@ -148,7 +152,7 @@ func (a *Admin) DBCreateToken(t *TokenCreate) error {
 		Number:     Quota(t.Number),
 		CreateTime: time.Duration(time.Now().Unix()),
 		UpdateTime: time.Duration(time.Now().Unix()),
-		Disabled:   true,
+		Disabled:   false,
 	}
 
 	_, err = a.DBClient.Collection(TokenTable).InsertOne(context.TODO(), token)
@@ -394,17 +398,17 @@ func (a *Admin) DBUpdateTokenNumber(token *TokenUpdateNumber) error {
 	if tokenfound == nil {
 		return fmt.Errorf("token不存在")
 	}
-	if (tokenfound.Number + token.Number < 0) && token.Number < 0{
+	if (tokenfound.Number+token.Number < 0) && token.Number < 0 {
 		return fmt.Errorf("token Number 不足")
 	}
 	collection := a.DBClient.Collection(TokenTable)
 	filter := bson.M{"key": token.Key}
-	update := bson.D{{Key: "$inc", Value: bson.D{{Key: "number", Value: token.Number}}}, 
-	{Key: "$set", Value: bson.D{{Key: "update_time", Value: time.Now().Unix()}}}}
-    if _, err := collection.UpdateOne(context.TODO(), filter, update); err != nil {
-        return err
-    }
-    return nil
+	update := bson.D{{Key: "$inc", Value: bson.D{{Key: "number", Value: token.Number}}},
+		{Key: "$set", Value: bson.D{{Key: "update_time", Value: time.Now().Unix()}}}}
+	if _, err := collection.UpdateOne(context.TODO(), filter, update); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (a *Admin) DBDeleteUser(user *UserDelete) error {
