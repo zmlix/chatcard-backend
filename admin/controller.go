@@ -53,21 +53,21 @@ func (a *Admin) Login(w http.ResponseWriter, r *http.Request) {
 
 		file, err := os.OpenFile("./avatar.png", os.O_RDONLY, 0644)
 		if err != nil {
-			w.Write(NewResponse(ERROR, Result{}.Message("Error opening the file: " + err.Error())))
+			w.Write(NewResponse(ERROR, Result{}.Message("Error opening the file: "+err.Error())))
 			return
 		}
-		
+
 		defer file.Close()
-		
+
 		buf := &bytes.Buffer{}
 		_, err = io.Copy(buf, file)
 		if err != nil {
-			w.Write(NewResponse(ERROR, Result{}.Message("Error copying file content: " + err.Error())))
+			w.Write(NewResponse(ERROR, Result{}.Message("Error copying file content: "+err.Error())))
 			return
 		}
-		
+
 		pic := base64.StdEncoding.EncodeToString([]byte(buf.String()))
-		
+
 		w.Write(NewResponse(OK, Result{}.AvatarAndMessage(pic, "登陆成功！")))
 		return
 	}
@@ -284,7 +284,7 @@ func (a *Admin) GetUserById(w http.ResponseWriter, r *http.Request) {
 	w.Write(NewResponse(OK, Result{}.Data(userfound)))
 }
 
-func (a *Admin) UploadAvatar(w http.ResponseWriter, r *http.Request){
+func (a *Admin) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -295,7 +295,7 @@ func (a *Admin) UploadAvatar(w http.ResponseWriter, r *http.Request){
 		w.Write(NewResponse(ERROR, Result{}.Message("Error parsing multipart form: "+err.Error())))
 		return
 	}
-	
+
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		w.Write(NewResponse(ERROR, Result{}.Message("Error retrieving the file: "+err.Error())))
@@ -314,19 +314,19 @@ func (a *Admin) UploadAvatar(w http.ResponseWriter, r *http.Request){
 	// open file
 	file, err = os.OpenFile("./avatar.png", os.O_RDONLY, 0644)
 	if err != nil {
-		w.Write(NewResponse(ERROR, Result{}.Message("Error opening the file: " + err.Error())))
+		w.Write(NewResponse(OK, Result{}.Avatar("")))
 		return
 	}
-	
+
 	defer file.Close()
-	
+
 	buf := &bytes.Buffer{}
 	_, err = io.Copy(buf, file)
 	if err != nil {
-		w.Write(NewResponse(ERROR, Result{}.Message("Error copying file content: " + err.Error())))
+		w.Write(NewResponse(ERROR, Result{}.Message("Error copying file content: "+err.Error())))
 		return
 	}
-		
+
 	pic := base64.StdEncoding.EncodeToString([]byte(buf.String()))
 
 	w.Write(NewResponse(OK, Result{}.Avatar(pic)))
