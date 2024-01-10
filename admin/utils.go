@@ -46,7 +46,7 @@ func (r Result) Data(data any) map[string]any {
 	return map[string]any{"data": data}
 }
 
-func (r Result) Avatar (avatar any) map[string]any {
+func (r Result) Avatar(avatar any) map[string]any {
 	return map[string]any{"avatar": avatar}
 }
 
@@ -80,10 +80,6 @@ type UserDelete struct {
 }
 
 type UserGetById struct {
-	Id Uid `json:"id"`
-}
-
-type UserGetById struct{
 	Id Uid `json:"id"`
 }
 
