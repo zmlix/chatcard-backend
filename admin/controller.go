@@ -1,7 +1,10 @@
 package admin
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -47,7 +50,25 @@ func (a *Admin) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Add("Token", token)
-		w.Write(NewResponse(OK, Result{}.Message("登陆成功")))
+
+		file, err := os.OpenFile("./avatar.png", os.O_RDONLY, 0644)
+		if err != nil {
+			w.Write(NewResponse(ERROR, Result{}.Message("Error opening the file: " + err.Error())))
+			return
+		}
+		
+		defer file.Close()
+		
+		buf := &bytes.Buffer{}
+		_, err = io.Copy(buf, file)
+		if err != nil {
+			w.Write(NewResponse(ERROR, Result{}.Message("Error copying file content: " + err.Error())))
+			return
+		}
+		
+		pic := base64.StdEncoding.EncodeToString([]byte(buf.String()))
+		
+		w.Write(NewResponse(OK, Result{}.AvatarAndMessage(pic, "登陆成功！")))
 		return
 	}
 	w.Write(NewResponse(ERROR, Result{}.Message("登陆失败")))
@@ -255,11 +276,60 @@ func (a *Admin) GetUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userfound := a.DBFindUserByID(user.Id)
+
 	if userfound == nil {
 		w.Write(NewResponse(ERROR, Result{}.Message("用户不存在")))
 		return
 	}
 	w.Write(NewResponse(OK, Result{}.Data(userfound)))
+}
+
+func (a *Admin) UploadAvatar(w http.ResponseWriter, r *http.Request){
+	if !CheckRequestMethod(r.Method, []string{http.MethodPost}) {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseMultipartForm(10 << 20) // 10MB
+	if err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("Error parsing multipart form: "+err.Error())))
+		return
+	}
+	
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("Error retrieving the file: "+err.Error())))
+		return
+	}
+
+	filepath := "./avatar.png"
+	err = saveFile(filepath, file)
+	if err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("Error saving the file: "+err.Error())))
+		return
+	}
+
+	file.Close()
+
+	// open file
+	file, err = os.OpenFile("./avatar.png", os.O_RDONLY, 0644)
+	if err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("Error opening the file: " + err.Error())))
+		return
+	}
+	
+	defer file.Close()
+	
+	buf := &bytes.Buffer{}
+	_, err = io.Copy(buf, file)
+	if err != nil {
+		w.Write(NewResponse(ERROR, Result{}.Message("Error copying file content: " + err.Error())))
+		return
+	}
+		
+	pic := base64.StdEncoding.EncodeToString([]byte(buf.String()))
+
+	w.Write(NewResponse(OK, Result{}.Avatar(pic)))
 }
 
 func (a *Admin) CheckToken(w http.ResponseWriter, r *http.Request) {

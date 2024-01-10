@@ -8,7 +8,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
+	"mime/multipart"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -43,8 +46,16 @@ func (r Result) Data(data any) map[string]any {
 	return map[string]any{"data": data}
 }
 
+func (r Result) Avatar (avatar any) map[string]any {
+	return map[string]any{"avatar": avatar}
+}
+
 func (r Result) DataAndTotalPages(data any, totalPages int) map[string]any {
 	return map[string]any{"data": data, "totalPages": totalPages}
+}
+
+func (r Result) AvatarAndMessage(avatar any, msg any) map[string]any {
+	return map[string]any{"avatar": avatar, "message": msg}
 }
 
 type UserLogin struct {
@@ -69,6 +80,10 @@ type UserDelete struct {
 }
 
 type UserGetById struct {
+	Id Uid `json:"id"`
+}
+
+type UserGetById struct{
 	Id Uid `json:"id"`
 }
 
@@ -436,4 +451,19 @@ func GenerateKeyByUserID(userID Uid) (string, error) {
 
 func CheckRequestMethod(method string, methods []string) bool {
 	return slices.Contains(methods, method)
+}
+
+func saveFile(filepath string, file multipart.File) error {
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, file)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
