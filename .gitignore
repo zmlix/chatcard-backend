@@ -1,2 +1,6 @@
 .env
 /logs
+proxy.txt
+go.sum
+.vscode
+avatar.png

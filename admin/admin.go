@@ -92,6 +92,8 @@ func (a *Admin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		a.UpdateTokenNumber(w, r)
 	case "/v1/token/getbykey":
 		a.GetTokenByKey(w, r)
+	case "/v1/user/uploadavatar":
+		a.UploadAvatar(w, r)
 	default:
 		w.WriteHeader(http.StatusBadRequest)
 	}
