@@ -53,7 +53,7 @@ func (a *Admin) Login(w http.ResponseWriter, r *http.Request) {
 
 		file, err := os.OpenFile("./avatar.png", os.O_RDONLY, 0644)
 		if err != nil {
-			w.Write(NewResponse(ERROR, Result{}.Message("Error opening the file: "+err.Error())))
+			w.Write(NewResponse(OK, Result{}.Avatar("")))
 			return
 		}
 
@@ -314,7 +314,7 @@ func (a *Admin) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	// open file
 	file, err = os.OpenFile("./avatar.png", os.O_RDONLY, 0644)
 	if err != nil {
-		w.Write(NewResponse(OK, Result{}.Avatar("")))
+		w.Write(NewResponse(ERROR, Result{}.Message("Error opening the file: "+err.Error())))
 		return
 	}
 
